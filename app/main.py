@@ -213,8 +213,26 @@ def recommend(req: RecommendRequest):
             - req.diversity_weight * popularity_penalty
         )
 
+        description_row = popularity_scores[
+            popularity_scores["StockCode"] == pred.iid
+        ]
+
+        description = (
+            description_row["description"].values[0]
+            if not description_row.empty
+            else "Unknown Product"
+        )
+
+        purchase_count = (
+            int(description_row["purchase_count"].values[0])
+            if not description_row.empty
+            else 0
+        )
+
         final_recommendations.append({
             "StockCode": pred.iid,
+            "description": description,
+            "purchase_count": purchase_count,
             "svd_score": round(float(pred.est), 3),
             "blended_score": round(float(blended_score), 3)
         })
@@ -224,6 +242,9 @@ def recommend(req: RecommendRequest):
         key=lambda x: x["blended_score"],
         reverse=True
     )
+
+    for idx, rec in enumerate(final_recommendations):
+        rec["rank"] = idx + 1
 
     return {
         "customer_id": customer_id,
